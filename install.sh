@@ -2,7 +2,7 @@
 
 function install(){
 echo "check or install $@"
-arr=$@
+arr=($@)
 total=$#
 not_installed_count=0
 installed_count=0
