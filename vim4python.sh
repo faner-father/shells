@@ -26,6 +26,8 @@ then
     else
         echo "turn off vim for python failed! code is $code"
     fi
+else
+    echo "unknown argument:$1!only can be on/off"
 fi
 }
 if [ $# == 0 ]
