@@ -24,7 +24,7 @@ _upload_file_form = u'''
     </head>
     <body>
         <div>
-                <h1>上传主页图片</h1>
+                <h1>上传文件</h1>
                         <form action="/upload"
                         method="post" enctype=multipart/form-data>
                                                                                                             <input type=file
