@@ -29,6 +29,8 @@ MODULES=("ssh://git@$GIT_SERVER:$GIT_PORT/fangcaiqian/ca.git"
         "ssh://git@$GIT_SERVER:$GIT_PORT/wuhailing/storage.git"
         "ssh://git@$GIT_SERVER:$GIT_PORT/wuhailing/image.git"
         "ssh://git@$GIT_SERVER:$GIT_PORT/chenmingyu/observation.git" 
+        "ssh://git@$GIT_SERVER:$GIT_PORT/fangcaiqian/fagent.git"
+        "ssh://git@$GIT_SERVER:$GIT_PORT/chenchengfa/windows_client.git"
         )
 
 resolve_module_dir_name(){

@@ -10,7 +10,8 @@ else
 fi
 
 MODULES=("ca" "lugia" "observation" "squirtle" "sturgeon" 
-        "sturgeon-client" "storage" "image" "monitor")
+        "sturgeon-client" "storage" "image" "monitor" 
+        "fagent" "windows_client")
 ORIGIN_DIR=$PWD
 for m in ${MODULES[@]}
 do
