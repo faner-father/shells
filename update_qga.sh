@@ -1,7 +1,11 @@
 #/bin/bash
 
-ARGS=("VM_ID" "FILE")
+#usage:
+#update_qga.sh vm_id_or_name ~/qemu-ga.exe
+#
 
+ARGS=("VMS" "FILE")
+VM_ID=  #current operate VM ID
 E_FILE_UNREADABLE=2
 E_SPLIT_FILE_ERR=3
 E_ARG_LEN_ERR=1
@@ -11,6 +15,8 @@ E_CAN_NOT_CLEAR_UPDATE=6
 E_UPDATE_FILE=7
 E_HASH_NOT_EQUAL=8
 E_GUEST_UPDATE=9
+E_ARG_VM_LIST_NULL=10
+
 VIRSH_CMD_PREFIX='virsh qemu-agent-commnd'
 
 DEST_FILE="qemu-ga.exe"
@@ -147,6 +153,23 @@ done
 #pu_cmd=`get_virsh_command `
 }
 
+pushes(){
+    for vm in $VMS
+    do
+        echo "==$vm"
+        VM_ID=$vm
+        OLD_VERSION=`get_version`
+        clear_update
+        push_update
+        valid_hash
+        guest_update
+        echo 'old_version='$OLD_VERSION &>$OUT
+        sleep 0.5
+        NEW_VERSION=`get_version`
+        echo 'new_version='$NEW_VERSION &>$OUT
+    done
+}
+
 valid_hash(){
 local cmd
 local dest_hash
@@ -171,18 +194,35 @@ then
 fi
 }
 
-valid_args_exist $@
+split_vms(){
+    vms=$1
+    vms=`echo $vms|tr -d ' '|tr -t ',' "\n"`
+	local ret
+	ret=()
+	for vm in ${vms[@]}
+	do
+		if [ -n "$vm" ]
+		then
+			ret+=($vm)
+		fi
+	done
+    echo "${vms[@]}"
+}
+
+VMS_CHECK(){
+    echo "call check vms" &>$OUT
+    VMS=`split_vms "$VMS"`
+    echo 'VMS='$VMS &>$OUT
+    if [ -z "$VMS" ]
+    then
+        echo "argument:vm id list is null!$VMS"
+        exit $E_ARG_VM_LIST_NULL
+    fi
+}
+
+valid_args_exist "$@"
 valid_permission
-initial_args $@
+initial_args "$@"
 check_args
 split_file
-OLD_VERSION=`get_version`
-
-clear_update
-push_update
-valid_hash
-guest_update
-echo 'old_version='$OLD_VERSION &>$OUT
-sleep 1
-NEW_VERSION=`get_version`
-echo 'new_version='$NEW_VERSION &>$OUT
+pushes
