@@ -153,20 +153,37 @@ done
 #pu_cmd=`get_virsh_command `
 }
 
+_do_push(){
+        OLD_VERSION=`get_version`
+        local out
+        out=`clear_update && push_update && valid_hash && guest_update`
+        ec=$?
+        echo $ec
+        if [ $ec -ne 0 ]
+        then
+            echo $out >2
+            exit $ec
+        fi
+        echo 'old_version='$OLD_VERSION &>$OUT
+        sleep 0.3
+        NEW_VERSION=`get_version`
+        echo 'new_version='$NEW_VERSION &>$OUT
+        exit $ec
+}
+
 pushes(){
     for vm in $VMS
     do
-        echo "==$vm"
         VM_ID=$vm
-        OLD_VERSION=`get_version`
-        clear_update
-        push_update
-        valid_hash
-        guest_update
-        echo 'old_version='$OLD_VERSION &>$OUT
-        sleep 0.5
-        NEW_VERSION=`get_version`
-        echo 'new_version='$NEW_VERSION &>$OUT
+        _do_push &>$vm".log" &
+    done
+}
+
+summary_results(){
+    for vm in $VMS
+    do
+      echo "$vm"
+      cat "$vm"'.log'
     done
 }
 
@@ -226,3 +243,5 @@ initial_args "$@"
 check_args
 split_file
 pushes
+wait
+summary_results
