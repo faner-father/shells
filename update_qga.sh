@@ -27,10 +27,10 @@ cmd="virsh qemu-agent-command $VM_ID ""$1"
 echo $cmd
 }
 
-DEBUG=0
+DEBUG=1
 if [ $DEBUG == 1 ]
 then
-OUT='/dev/stdin'
+OUT='debug.log'
 else
 OUT='/dev/null'
 fi
@@ -95,9 +95,14 @@ fi
 
 get_version(){
 VERSION_CMD=`get_virsh_command '{"execute":"guest-version"}'` #'sudo virsh qemu-agent-command '"$VM_ID "'{"execute":"guest-version"}'
+
 echo "VCMD="$VERSION_CMD &>$OUT
-VERSION_OUT=`$VERSION_CMD`
-echo $VERSION_OUT &>$OUT
+VERSION_OUT=`$VERSION_CMD 2>&1`
+LAST_EC=$?
+if [ $LAST_EC -ne 0 ]
+then
+    set_result $LAST_EC "$VERSION_OUT " true
+fi
 json_get $VERSION_OUT
 }
 
@@ -153,12 +158,24 @@ done
 #pu_cmd=`get_virsh_command `
 }
 
+check_exit(){
+last_ec=$?
+last_msg="$1"
+if [ $last_ec -ne 0 ]
+then
+    echo "$last_msg" >$OUTPUT_MSG_DESTINATION
+    exit $last_ec
+fi
+}
+
 _do_push(){
+        #OUTPUT_MSG_DESTINATION=$VM_ID".log"
         OLD_VERSION=`get_version`
+	check_exit "$OLD_VERSION"
         local out
         out=`clear_update && push_update && valid_hash && guest_update`
         ec=$?
-        echo $ec
+        echo $ec >$OUT
         if [ $ec -ne 0 ]
         then
             echo $out >2
@@ -175,7 +192,7 @@ pushes(){
     for vm in $VMS
     do
         VM_ID=$vm
-        _do_push &>$vm".log" &
+        _do_push &>$vm".log" & 
     done
 }
 
@@ -187,16 +204,70 @@ summary_results(){
     done
 }
 
+OUTPUT_EXIT_CODES=()
+OUTPUT_MSGES=()
+OUTPUT_MSG_DESTINATION=/dev/stdout
+
+set_result(){
+# arg3:whether to exit, true to exit , or false not to exit
+#arg1: exit code
+# arg2: error msg
+# arg4: output destination
+    echo "$@" >$OUT
+    OUTPUT_EXIT_CODES+=( "$1" )
+    OUTPUT_MSGES+=( "$2" )
+    if [ -n "$4" ]
+    then
+        OUTPUT_MSG_DESTINATION="$4"
+    fi
+    if [ "$3" = "true" ]
+    then
+        out_result
+    fi
+}
+
+OUT_BEGIN=0
+
+_parse_str(){
+    if [ -n "$1" ]
+    then
+        echo `echo "$1"|tr "\n" "\t"`
+    fi     
+}
+
+out_result(){
+    #: >$OUTPUT_MSG_DESTINATION
+    echo "${OUTPUT_EXIT_CODES[@]}" >$OUT
+    echo "${OUTPUT_MSGES[@]}" >$OUT
+    len=${#OUTPUT_EXIT_CODES}
+    blen=$len
+    [ $OUT_BEGIN -eq 0 ] &&  cat /dev/null>$OUTPUT_MSG_DESTINATION && ((OUT_BEGIN=1))
+    until [ $len -eq 0 ]
+    do
+         #out_exit_codes+=( ${OUTPUT_EXIT_CODES[len-1]} )
+         #out_msges+=( ${OUTPUT_MSGES[len-1]} )
+        echo -ne "${OUTPUT_EXIT_CODES[len-1]}\t" >>$OUTPUT_MSG_DESTINATION
+	echo -E `_parse_str "${OUTPUT_MSGES[len-1]}"` >>$OUTPUT_MSG_DESTINATION
+        (( len-- ))
+    done
+    exit ${OUTPUT_EXIT_CODES[blen-1]}
+}
+
 valid_hash(){
-local cmd
-local dest_hash
-cmd=`get_virsh_command '{"execute":"guest-update-file-md5", "arguments":{"file":"'"$DEST_FILE\"}}"`
-dest_hash=`$cmd`
-echo $dest_hash &>$OUT
-dest_hash=`json_get "$dest_hash" "obj['return']"`
-echo "dest_hash="$dest_hash &>$OUT
-local_hash=`md5sum $FILE | awk '{print $1}'`
-[ ! "${local_hash^^}" == "${dest_hash^^}" ] && echo "hash not equal:expected $local_hash , actually $dest_hash" >&2 && exit $E_HASH_NOT_EQUAL
+    local cmd
+    local dest_hash
+    cmd=`get_virsh_command '{"execute":"guest-update-file-md5", "arguments":{"file":"'"$DEST_FILE\"}}"`
+    dest_hash=`$cmd`
+    echo $dest_hash &>$OUT
+    dest_hash=`json_get "$dest_hash" "obj['return']"`
+    echo "dest_hash="$dest_hash &>$OUT
+    local_hash=`md5sum $FILE | awk '{print $1}'`
+    if [ "${local_hash^^}" != "${dest_hash^^}" ]
+    then 
+        set_result $E_HASH_NOT_EQUAL \ 
+            "hash not equal:expected $local_hash, actually $dest_hash" \
+            true 
+    fi
 }
 
 guest_update(){
