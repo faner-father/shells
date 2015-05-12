@@ -6,6 +6,7 @@
 
 ARGS=("VMS" "FILE")
 VM_ID=  #current operate VM ID
+#ERROR codes definition
 E_FILE_UNREADABLE=2
 E_SPLIT_FILE_ERR=3
 E_ARG_LEN_ERR=1
@@ -17,8 +18,15 @@ E_HASH_NOT_EQUAL=8
 E_GUEST_UPDATE=9
 E_ARG_VM_LIST_NULL=10
 
+#for OUTPUT 
+OUTPUT_EXIT_CODES=()
+OUTPUT_MSGES=()
+OUTPUT_MSG_DESTINATION=/dev/stdout
+OUT_BEGIN=0
+
 VIRSH_CMD_PREFIX='virsh qemu-agent-commnd'
 
+#DEST_FILE save to VM(filename)
 DEST_FILE="qemu-ga.exe"
 
 get_virsh_command(){
@@ -30,9 +38,9 @@ echo $cmd
 DEBUG=1
 if [ $DEBUG == 1 ]
 then
-OUT='debug.log'
+    OUT='debug.log'
 else
-OUT='/dev/null'
+    OUT='/dev/null'
 fi
 
 FILE_CHECK(){
@@ -155,7 +163,6 @@ do
         exit $E_UPDATE_FILE
     fi
 done
-#pu_cmd=`get_virsh_command `
 }
 
 check_exit(){
@@ -199,14 +206,18 @@ pushes(){
 summary_results(){
     for vm in $VMS
     do
-      echo "$vm"
-      cat "$vm"'.log'
+      #output format : line1 : vm_id , line2 vm.log which every line is a exitcode \t error msg , if empty , this is ok
+    #only output the error
+        error=`cat "$vm"'.log'`
+        if [ -n "$error" ]
+            then
+            echo "$vm"
+            echo "$error"
+        fi
     done
 }
 
-OUTPUT_EXIT_CODES=()
-OUTPUT_MSGES=()
-OUTPUT_MSG_DESTINATION=/dev/stdout
+
 
 set_result(){
 # arg3:whether to exit, true to exit , or false not to exit
@@ -225,8 +236,6 @@ set_result(){
         out_result
     fi
 }
-
-OUT_BEGIN=0
 
 _parse_str(){
     if [ -n "$1" ]
