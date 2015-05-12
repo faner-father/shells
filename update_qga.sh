@@ -35,6 +35,10 @@ cmd="virsh qemu-agent-command $VM_ID ""$1"
 echo $cmd
 }
 
+#OUTPUT Delimiter
+OUTPUT_DELIMITER="||"
+ITEM_BEGIN_IDENTIFER="==="
+
 DEBUG=1
 if [ $DEBUG == 1 ]
 then
@@ -109,6 +113,7 @@ VERSION_OUT=`$VERSION_CMD 2>&1`
 LAST_EC=$?
 if [ $LAST_EC -ne 0 ]
 then
+    set_result 22 "for test" false
     set_result $LAST_EC "$VERSION_OUT " true
 fi
 json_get $VERSION_OUT
@@ -211,7 +216,7 @@ summary_results(){
         error=`cat "$vm"'.log'`
         if [ -n "$error" ]
             then
-            echo "$vm"
+            echo "$ITEM_BEGIN_IDENTIFER$vm"
             echo "$error"
         fi
     done
@@ -255,7 +260,7 @@ out_result(){
     do
          #out_exit_codes+=( ${OUTPUT_EXIT_CODES[len-1]} )
          #out_msges+=( ${OUTPUT_MSGES[len-1]} )
-        echo -ne "${OUTPUT_EXIT_CODES[len-1]}\t" >>$OUTPUT_MSG_DESTINATION
+        echo -ne "${OUTPUT_EXIT_CODES[len-1]}$OUTPUT_DELIMITER">>$OUTPUT_MSG_DESTINATION
 	echo -E `_parse_str "${OUTPUT_MSGES[len-1]}"` >>$OUTPUT_MSG_DESTINATION
         (( len-- ))
     done
