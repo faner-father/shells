@@ -3,9 +3,9 @@
 
 from flask import Flask, request
 import commands
-
+import os, sys
 print 'http file server version 0.0'
-
+home = os.path.expanduser('~/books')
 def init_app():
     global app
     app = Flask(__name__)
@@ -49,8 +49,8 @@ def upload_file():
     #_DEBUG()
     if request.files :
         ufile = request.files['file']
-        filepath = '/'.join(['', 'tmp', ufile.filename])
-        print 'save to {}'.format(filepath)
+        filepath = u'/'.join([home, ufile.filename])
+        print u'save to {}'.format(filepath)
         ufile.save(filepath)
         return 'upload ok'
     else:
@@ -60,6 +60,16 @@ def ip():
     return commands.getoutput("ifconfig|grep 'inet addr'|tr -s '\t' ' '|cut -d ' ' -f"
         "3|cut -d ':' -f 2|grep -v '127'")
 
+def _init_home():
+    global home
+    if len(sys.argv) > 1:
+        home = os.path.expanduser(sys.argv[1])
+    if not os.path.isdir(home):
+        os.mkdir(home)
+    print 'use home %s'%home
+   
+
 if __name__ == '__main__':
     print '======local ip======={}'.format(ip())
+    _init_home()
     app.run(host='0.0.0.0')
