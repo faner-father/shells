@@ -68,8 +68,18 @@ def _init_home():
         os.mkdir(home)
     print 'use home %s'%home
    
-
-if __name__ == '__main__':
+def run_server():
     print '======local ip======={}'.format(ip())
     _init_home()
-    app.run(host='0.0.0.0')
+    try:
+        from gevent.wsgi import WSGIServer
+        print 'use gevent server....'
+        server = WSGIServer(('0.0.0.0', 5000), app)
+        server.serve_forever()
+    except ImportError:
+        print 'gevent not exists, will use the flask server'
+    else:
+        app.run(host='0.0.0.0')
+
+if __name__ == '__main__':
+    run_server()
