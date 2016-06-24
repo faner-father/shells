@@ -11,8 +11,11 @@ import thread
 _stop_interrupt = False
 _stopped = False
 
+_debug = False
 
 def log(msg):
+    if not _debug:
+        return
     with open('tail.log', 'a+') as l:
         l.write(msg)
 
@@ -20,7 +23,7 @@ def log(msg):
 def watch(filepath, last_size=-1):
     if os.path.isfile(filepath):
         st = os.stat(filepath)
-        #print "size=", st.st_size
+        log("size=" + str(st.st_size))
         if last_size == -1:
             return st.st_size
         if st.st_size > last_size:
@@ -60,7 +63,14 @@ def wait_signal():
             interrupt(sig, frame)
         
     signal.signal(signal.SIGINT, interrupt)
-    signal.pause()
+    if sys.platform.startswith('win'):
+        while 1:
+            try:
+                time.sleep(1)
+            except IOError:
+                break
+    else:
+        signal.pause()
 
 
 if __name__ == '__main__':
