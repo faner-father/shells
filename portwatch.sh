@@ -4,12 +4,12 @@ function isPortListening(){
    if [ $# -eq 1 ]
    then 
       local find_port
-      if false #which lsof>/dev/null 2>&1
+      if which lsof>/dev/null 2>&1
       then
           find_port="lsof -i:$1"
       elif which netstat>/dev/null 2>&1
       then
-         find_port="netstat -an|grep $1"
+         find_port="netstat -an|grep $1|grep -i listen"
       fi
       #echo "cmd is " "$find_port"
       eval $find_port >/dev/null 2>&1
