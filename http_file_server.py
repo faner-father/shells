@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #coding:utf-8
 
 from flask import Flask, request
@@ -78,7 +78,6 @@ def run_server():
         server.serve_forever()
     except ImportError:
         print 'gevent not exists, will use the flask server'
-    else:
         app.run(host='0.0.0.0')
 
 if __name__ == '__main__':
