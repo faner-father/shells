@@ -73,9 +73,16 @@ def wait_signal():
         signal.pause()
 
 
+def tty():
+    while True:
+        s = raw_input()
+        if '' == s:
+            print 
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         raise TypeError('lack args! the usage: ptail <filepath>')
     thread.start_new(start, (sys.argv[1], ))
+    thread.start_new(tty, ())
     wait_signal()
     
