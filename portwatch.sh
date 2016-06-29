@@ -16,6 +16,7 @@ function isPortListening(){
       return $?
     fi
 }
+watch(){
 while true
 do
 isPortListening $1
@@ -30,3 +31,12 @@ else
 fi
 sleep 1
 done
+}
+echo $#
+if [ $# -ne 2 ]
+then 
+   echo "lack args! Usage: portwatch.sh <port> <command>"
+   exit 1
+else
+   watch "$@"
+fi
